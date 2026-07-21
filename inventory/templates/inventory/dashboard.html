@@ -1,0 +1,192 @@
+{% extends 'inventory/base.html' %}
+
+{% block title %}Dashboard - SL-GreenRoot Market{% endblock %}
+
+{% block content %}
+<div class="space-y-8 animate-fade-in">
+    <!-- Page Header -->
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
+        <div>
+            <h1 class="text-3xl font-extrabold tracking-tight text-slate-900">Inventory Dashboard</h1>
+            <p class="text-slate-500 text-sm mt-1">Real-time store stock analysis, inventory metrics, and audit logs.</p>
+        </div>
+        {% if user.is_superuser or user.groups.all.0.name == 'Manager' %}
+            <div class="flex space-x-3">
+                <a href="{% url 'product_create' %}" class="inline-flex items-center space-x-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-4 py-2.5 rounded-xl transition shadow-lg shadow-emerald-600/10 text-sm">
+                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                    </svg>
+                    <span>Add Product</span>
+                </a>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Summary Metrics -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <!-- Metric Card 1: Total Products -->
+        <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between transition hover:shadow-md hover:scale-[1.01] duration-200">
+            <div class="space-y-2">
+                <span class="text-xs font-bold text-slate-400 uppercase tracking-wider block">Total Products</span>
+                <span class="text-3xl font-bold text-slate-800">{{ total_products }}</span>
+            </div>
+            <div class="p-3.5 bg-emerald-50 text-emerald-600 rounded-2xl">
+                <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+                </svg>
+            </div>
+        </div>
+
+        <!-- Metric Card 2: Low Stock Items -->
+        <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between transition hover:shadow-md hover:scale-[1.01] duration-200">
+            <div class="space-y-2">
+                <span class="text-xs font-bold text-slate-400 uppercase tracking-wider block">Low Stock Alerts</span>
+                <span class="text-3xl font-bold {% if total_low_stock > 0 %}text-rose-600{% else %}text-slate-800{% endif %}">
+                    {{ total_low_stock }}
+                </span>
+            </div>
+            <div class="p-3.5 {% if total_low_stock > 0 %}bg-rose-50 text-rose-600{% else %}bg-slate-50 text-slate-400{% endif %} rounded-2xl">
+                <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                </svg>
+            </div>
+        </div>
+
+        <!-- Metric Card 3: Live Transactions -->
+        <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between transition hover:shadow-md hover:scale-[1.01] duration-200">
+            <div class="space-y-2">
+                <span class="text-xs font-bold text-slate-400 uppercase tracking-wider block">Recent Logs</span>
+                <span class="text-3xl font-bold text-slate-800">{{ recent_transactions|length }}</span>
+            </div>
+            <div class="p-3.5 bg-blue-50 text-blue-600 rounded-2xl">
+                <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/>
+                </svg>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dual Table Columns -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <!-- Low Stock Alerts -->
+        <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden flex flex-col">
+            <div class="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-gradient-to-r from-white to-slate-50">
+                <h3 class="font-bold text-slate-800 flex items-center space-x-2 text-base">
+                    <span class="h-2.5 w-2.5 bg-rose-500 rounded-full animate-pulse"></span>
+                    <span>Low Stock Warnings</span>
+                </h3>
+                <span class="bg-rose-50 text-rose-700 text-xs font-bold px-2.5 py-1 rounded-full uppercase">Threshold Required</span>
+            </div>
+            <div class="overflow-x-auto flex-grow">
+                {% if low_stock_products %}
+                    <table class="min-w-full divide-y divide-slate-100">
+                        <thead class="bg-slate-50">
+                            <tr>
+                                <th class="px-6 py-3.5 text-left text-xs font-bold text-slate-400 uppercase tracking-wider">Product</th>
+                                <th class="px-6 py-3.5 text-left text-xs font-bold text-slate-400 uppercase tracking-wider">SKU</th>
+                                <th class="px-6 py-3.5 text-center text-xs font-bold text-slate-400 uppercase tracking-wider">In Stock</th>
+                                <th class="px-6 py-3.5 text-center text-xs font-bold text-slate-400 uppercase tracking-wider">Reorder Level</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100">
+                            {% for p in low_stock_products %}
+                                <tr class="hover:bg-slate-50 transition duration-150">
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="flex items-center space-x-3">
+                                            {% if p.image %}
+                                                <img class="h-9 w-9 rounded-lg object-cover ring-2 ring-slate-100" src="{{ p.image.url }}" alt="{{ p.name }}">
+                                            {% else %}
+                                                <div class="h-9 w-9 rounded-lg bg-emerald-50 text-emerald-700 flex items-center justify-center font-bold text-sm">
+                                                    {{ p.name|slice:":2"|upper }}
+                                                </div>
+                                            {% endif %}
+                                            <span class="text-sm font-semibold text-slate-800">{{ p.name }}</span>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500 font-mono">{{ p.sku }}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-center">
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-rose-50 text-rose-700">
+                                            {{ p.quantity_in_stock }}
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium text-slate-600">{{ p.reorder_level }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                {% else %}
+                    <div class="p-8 text-center text-slate-400">
+                        <svg class="h-12 w-12 mx-auto text-slate-300 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        <p class="text-sm font-semibold text-slate-500">All product stock levels are healthy.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Recent Audit Log / Transaction History -->
+        <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden flex flex-col">
+            <div class="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-gradient-to-r from-white to-slate-50">
+                <h3 class="font-bold text-slate-800 flex items-center space-x-2 text-base">
+                    <svg class="h-5 w-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    <span>Recent Activity Log</span>
+                </h3>
+                <span class="bg-emerald-50 text-emerald-700 text-xs font-bold px-2.5 py-1 rounded-full uppercase">Real-Time</span>
+            </div>
+            <div class="overflow-x-auto flex-grow">
+                {% if recent_transactions %}
+                    <table class="min-w-full divide-y divide-slate-100">
+                        <thead class="bg-slate-50">
+                            <tr>
+                                <th class="px-6 py-3.5 text-left text-xs font-bold text-slate-400 uppercase tracking-wider">Product</th>
+                                <th class="px-6 py-3.5 text-center text-xs font-bold text-slate-400 uppercase tracking-wider">Action</th>
+                                <th class="px-6 py-3.5 text-center text-xs font-bold text-slate-400 uppercase tracking-wider">Qty Change</th>
+                                <th class="px-6 py-3.5 text-left text-xs font-bold text-slate-400 uppercase tracking-wider">Authorized By</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100">
+                            {% for tx in recent_transactions %}
+                                <tr class="hover:bg-slate-50 transition duration-150">
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-semibold text-slate-800">{{ tx.product.name }}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-center">
+                                        {% if tx.type == 'RESTOCK' %}
+                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700">
+                                                RESTOCK
+                                            </span>
+                                        {% elif tx.type == 'SALE' %}
+                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-sky-50 text-sky-700">
+                                                SALE
+                                            </span>
+                                        {% else %}
+                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-50 text-amber-700">
+                                                ADJUSTMENT
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-bold {% if tx.quantity > 0 %}text-emerald-600{% else %}text-rose-600{% endif %}">
+                                        {% if tx.quantity > 0 %}+{% endif %}{{ tx.quantity }}
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="text-sm font-medium text-slate-700">{{ tx.performed_by.username }}</div>
+                                        <div class="text-[10px] text-slate-400">{{ tx.timestamp|date:"M d, g:i A" }}</div>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                {% else %}
+                    <div class="p-8 text-center text-slate-400">
+                        <svg class="h-12 w-12 mx-auto text-slate-300 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                        </svg>
+                        <p class="text-sm font-semibold text-slate-500">No stock transactions have been performed yet.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

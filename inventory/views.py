@@ -73,6 +73,7 @@ def product_search_api(request):
             'unit_price': str(p.unit_price),
             'quantity_in_stock': p.quantity_in_stock,
             'is_low_stock': p.is_low_stock(),
+            'image_url': p.image.url if p.image else '',
             'edit_url': f'/products/{p.id}/edit/' if (request.user.is_superuser or request.user.groups.filter(name='Manager').exists()) else ''
         })
         

@@ -138,7 +138,10 @@ WHITENOISE_MANIFEST_STRICT = False
 
 # Media Files (Product Images)
 MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / 'media'
+if os.getenv('VERCEL') or os.getenv('VERCEL_ENV') or str(BASE_DIR).startswith('/var/task'):
+    MEDIA_ROOT = Path('/tmp/media')
+else:
+    MEDIA_ROOT = BASE_DIR / 'media'
 
 # Cookie Hardening for Security
 CSRF_COOKIE_HTTPONLY = True

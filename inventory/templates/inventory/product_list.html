@@ -189,6 +189,9 @@
                     : `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-100">HEALTHY</span>`;
                 
                 const placeholderLetter = p.name.substring(0, 2).toUpperCase();
+                const imageHtml = p.image_url 
+                    ? `<img class="h-10 w-10 rounded-lg object-cover ring-2 ring-slate-100" src="${p.image_url}" alt="${p.name}">`
+                    : `<div class="h-10 w-10 rounded-lg bg-emerald-50 text-emerald-700 flex items-center justify-center font-bold text-sm">${placeholderLetter}</div>`;
                 
                 let actionsCell = '';
                 if (isManager) {
@@ -214,9 +217,7 @@
                     <tr class="hover:bg-slate-50/80 transition duration-150" data-id="${p.id}">
                         <td class="px-6 py-4 whitespace-nowrap">
                             <div class="flex items-center space-x-3">
-                                <div class="h-10 w-10 rounded-lg bg-emerald-50 text-emerald-700 flex items-center justify-center font-bold text-sm">
-                                    ${placeholderLetter}
-                                </div>
+                                ${imageHtml}
                                 <div>
                                     <div class="text-sm font-semibold text-slate-800">${p.name}</div>
                                 </div>

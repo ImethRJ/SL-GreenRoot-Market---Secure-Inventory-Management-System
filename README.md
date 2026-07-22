@@ -1,25 +1,34 @@
 # SL-GreenRoot Market - Secure Inventory Management System
 
-A secure, full-stack Inventory Management System built for **"SL-GreenRoot Market"** (a Sri Lankan supermarket) using Python, Django, and Tailwind CSS. The application features strict HTML/Markdown sanitization, Role-Based Access Control (RBAC), cookie hardening, and a cashier terminal (POS) Checkout page.
+A secure, full-stack Inventory Management System built for **"SL-GreenRoot Market"** (a Sri Lankan supermarket) using Python, Django, and Tailwind CSS. The application features strict HTML/Markdown sanitization, Role-Based Access Control (RBAC), cookie hardening, a cashier terminal (POS) Checkout page, production static asset delivery with WhiteNoise, and cloud deployment compatibility for Vercel and PostgreSQL / Supabase.
+
+> 🌐 **Live Production Application:** [https://green-root-market.vercel.app/](https://green-root-market.vercel.app/)
 
 ---
 
 ## 🛠️ Technical Profile & Specifications
 
 *   **Language Stack Used:** Python 3.11+, JavaScript (Vanilla ES6), HTML5, CSS3.
-*   **Frameworks Used:** Django 5.0 (Full-Stack MVC Backend), Tailwind CSS (Responsive Design Engine).
+*   **Frameworks & Server:** Django 5.0 (Full-Stack MVC Backend), Tailwind CSS v3 (Responsive Design Engine), WhiteNoise (Production Static Asset Handling).
+*   **Deployment Platforms:** Vercel (Serverless WSGI), Supabase / PostgreSQL (Cloud Database).
 *   **Libraries Used:** 
     *   `nh3`: High-performance Rust-based HTML sanitization engine.
     *   `markdown`: Compiles raw text notes inputs into standardized HTML.
     *   `Pillow`: Image processing library managing product thumbnail media assets.
     *   `python-dotenv`: Injects credentials into settings from local configuration files.
+    *   `whitenoise`: High-performance static file serving directly from Django WSGI without separate web server configuration.
+    *   `dj-database-url`: Environment-driven database connection string parser (`DATABASE_URL`).
+    *   `psycopg2-binary`: PostgreSQL database driver for Supabase / production relational databases.
 *   **Security Used:** 
     *   **Dual-Pass XSS Protection:** Markdown inputs are compiled and sanitized via `nh3` strict allowlist before storage.
     *   **Role-Based Access Control (RBAC):** Group authorization decorators (`@manager_required`, `@cashier_or_manager_required`) that filter incoming HTTP requests.
     *   **Cookie Hardening:** Strict browser transport configurations (`HttpOnly` session/CSRF cookies, SameSite `Lax`).
-    *   **CSRF Controls:** Automated CSRF token parsing on POS Javascript checkout postings and forms.
-*   **ORM Used:** Django ORM (Object-Relational Mapping) with atomicity safeguards (`transaction.atomic` on checkouts).
-*   **Database Handling:** SQLite (Local development default) configured with a production-ready PostgreSQL parsing layout in `settings.py` driven by connection string environment variables.
+    *   **CSRF Controls:** Automated CSRF token parsing on POS JavaScript checkout postings and forms.
+*   **ORM & Database Handling:** 
+    *   Django ORM with atomicity safeguards (`transaction.atomic` on checkouts).
+    *   Dynamic database backend configuration via `dj-database-url`:
+        *   **Local Development:** SQLite (`sqlite:///db.sqlite3`).
+        *   **Production Deployment:** PostgreSQL / Supabase with persistent connection pooling (`conn_max_age=600`) and connection health checks.
 
 ---
 
@@ -35,24 +44,74 @@ python -m venv .venv
 .venv\Scripts\pip install -r requirements.txt
 ```
 
-### 2. Set Up Database Schema
-Run migrations to build the SQLite database tables and initialize default user roles:
+### 2. Configure Environment Variables
+Copy `.env.example` to `.env` and adjust your environment variables:
+```bash
+# Create local environment file
+cp .env.example .env
+```
+Default `.env` configuration:
+```env
+DEBUG=True
+SECRET_KEY=django-insecure-greenroot-market-super-secret-key-12345
+DATABASE_URL=sqlite:///db.sqlite3
+ALLOWED_HOSTS=localhost,127.0.0.1
+```
+
+### 3. Set Up Database Schema
+Run migrations to build the database tables and initialize default user roles:
 ```bash
 .venv\Scripts\python manage.py migrate
 ```
 
-### 3. Seed Initial Store Data & User Accounts
+### 4. Seed Initial Store Data & User Accounts
 Seed default categories, products, and default staff credentials:
 ```bash
 .venv\Scripts\python seed.py
 ```
 
-### 4. Run the Application
+### 5. Run the Application
 Start the Django development server:
 ```bash
 .venv\Scripts\python manage.py runserver
 ```
 Visit the staff portal at **`http://127.0.0.1:8000/`**.
+
+---
+
+## 🌐 Production & Vercel Deployment
+
+* **Live Deployment URL:** [https://green-root-market.vercel.app/](https://green-root-market.vercel.app/)
+
+This repository is pre-configured for seamless deployment to **Vercel** with a **Supabase / PostgreSQL** cloud database.
+
+### Build Script & Static Assets (`build_files.sh`)
+Vercel executes `build_files.sh` on deployment to install Python dependencies, build minified Tailwind CSS assets, and run Django `collectstatic`:
+```bash
+#!/bin/bash
+python3 -m pip install -r requirements.txt
+npx -y tailwindcss@3 -i ./inventory/static/css/input.css -o ./inventory/static/css/tailwind.css --minify
+python3 manage.py collectstatic --no-input --clear
+```
+
+### Serverless Routing (`vercel.json`)
+The WSGI application handler `greenroot_market/wsgi.py` routes incoming serverless requests through Vercel:
+```json
+{
+  "buildCommand": "bash build_files.sh",
+  "outputDirectory": "staticfiles",
+  "routes": [
+    { "src": "/static/(.*)", "dest": "/static/$1" },
+    { "src": "/(.*)", "dest": "greenroot_market/wsgi.py" }
+  ]
+}
+```
+
+### Production Environment Variables on Vercel
+Set the following environment variables in your Vercel project settings:
+* `DATABASE_URL`: `postgresql://<user>:<password>@<host>:5432/<dbname>` (e.g., Supabase connection string)
+* `SECRET_KEY`: `<your-random-production-secret-key>`
+* `DEBUG`: `False`
 
 ---
 
@@ -96,9 +155,9 @@ To manually create a custom superuser admin, run:
 ```text
 greenroot_market/
 ├── greenroot_market/     # Project Configuration
-│   ├── settings.py       # Hardened cookies, database configurations, and app registration
+│   ├── settings.py       # Hardened cookies, dj-database-url, WhiteNoise, app registration
 │   ├── urls.py           # Main routing & Admin Console url path
-│   └── wsgi.py
+│   └── wsgi.py           # Entry point for WSGI web servers and Vercel serverless functions
 ├── inventory/            # Supermarket Application logic
 │   ├── models.py         # Category, Product (overridden save()), StockTransaction ORM Models
 │   ├── views.py          # Dashboard view, Catalog view, POS cashier API checkout endpoints
@@ -115,11 +174,18 @@ greenroot_market/
 │   │       ├── login.html             # Staff portal login
 │   │       └── pos.html               # Cashier POS terminal layout
 │   └── static/
+│       ├── css/
+│       │   ├── input.css              # Source Tailwind CSS directive
+│       │   └── tailwind.css           # Compiled minified stylesheet
 │       └── js/
 │           └── pos_search.js          # Cart state, AJAX checkout postings
-├── requirements.txt      # Django, nh3, markdown, pillow, and python-dotenv
+├── build_files.sh        # Vercel deployment automation script
+├── vercel.json           # Vercel serverless routing configuration
+├── tailwind.config.js    # Tailwind CSS scanning and theme setup
+├── requirements.txt      # Django, WhiteNoise, dj-database-url, psycopg2-binary, nh3, etc.
 ├── seed.py               # Seed database automation script
-└── .env.example          # Environment settings template
+├── .env.example          # Environment settings template
+└── manage.py
 ```
 
 ---

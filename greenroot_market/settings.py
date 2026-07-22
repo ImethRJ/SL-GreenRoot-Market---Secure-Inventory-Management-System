@@ -80,29 +80,16 @@ TEMPLATES = [
 WSGI_APPLICATION = 'greenroot_market.wsgi.application'
 
 
-# Database
-# https://docs.djangoproject.com/en/5.0/ref/settings/#databases
+import dj_database_url
 
-db_url = os.getenv('DATABASE_URL', 'sqlite:///db.sqlite3')
-if db_url.startswith('postgres://') or db_url.startswith('postgresql://'):
-    url = urlparse.urlparse(db_url)
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.postgresql',
-            'NAME': url.path[1:],
-            'USER': url.username,
-            'PASSWORD': url.password,
-            'HOST': url.hostname,
-            'PORT': url.port or 5432,
-        }
-    }
-else:
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': BASE_DIR / 'db.sqlite3',
-        }
-    }
+DATABASES = {
+    'default': dj_database_url.config(
+        default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}",
+        conn_max_age=600,
+        conn_health_checks=True,
+    )
+}
+
 
 
 # Password validation

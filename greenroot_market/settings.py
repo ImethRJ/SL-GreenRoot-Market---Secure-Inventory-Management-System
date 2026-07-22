@@ -90,6 +90,11 @@ DATABASES = {
     )
 }
 
+# Remove Prisma/Node-specific query params if present in DATABASE_URL
+if 'OPTIONS' in DATABASES['default']:
+    DATABASES['default']['OPTIONS'].pop('pgbouncer', None)
+
+
 
 
 # Password validation

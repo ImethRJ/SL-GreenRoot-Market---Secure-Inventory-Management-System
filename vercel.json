@@ -1,12 +1,9 @@
 {
   "version": 2,
+  "buildCommand": "bash build_files.sh",
   "builds": [
     {
       "src": "greenroot_market/wsgi.py",
-      "use": "@vercel/python"
-    },
-    {
-      "src": "build_files.sh",
       "use": "@vercel/python"
     }
   ],

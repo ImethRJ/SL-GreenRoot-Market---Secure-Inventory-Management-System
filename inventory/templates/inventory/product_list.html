@@ -137,12 +137,13 @@
 {% endblock %}
 
 {% block extra_js %}
+<script id="is-manager-data" type="application/json">{% if user.is_superuser or user.groups.all.0.name == 'Manager' %}true{% else %}false{% endif %}</script>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         const searchInput = document.getElementById('search-input');
         const tableBody = document.getElementById('product-table-body');
         const countSpan = document.getElementById('results-count');
-        const isManager = {% if user.is_superuser or user.groups.all.0.name == 'Manager' %}true{% else %}false{% endif %};
+        const isManager = JSON.parse(document.getElementById('is-manager-data').textContent);
         
         let debounceTimer;
         

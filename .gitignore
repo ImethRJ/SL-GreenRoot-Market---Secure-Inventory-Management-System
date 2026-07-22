@@ -1,0 +1,20 @@
+# Environments
+.venv/
+venv/
+ENV/
+env/
+
+# Python / Django
+__pycache__/
+*.py[cod]
+*$py.class
+*.sqlite3
+staticfiles/
+
+# Environment variables & secrets
+.env
+
+# System & OS
+.DS_Store
+Thumbs.db
+*.log

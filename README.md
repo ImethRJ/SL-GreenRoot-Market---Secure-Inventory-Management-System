@@ -34,6 +34,9 @@ A secure, full-stack Inventory Management System built for **"SL-GreenRoot Marke
 
 ## 🚀 Quick Start Guide
 
+> [!NOTE]
+> Environment configurations (`.env`), Python virtual environments (`.venv`), and local SQLite database files (`db.sqlite3`) are excluded from Git version control (`.gitignore`). Follow the steps below when cloning or setting up the repository locally.
+
 ### 1. Initialize Virtual Environment & Install Dependencies
 First, set up your Python virtual environment and install the required modules:
 ```bash
@@ -45,7 +48,7 @@ python -m venv .venv
 ```
 
 ### 2. Configure Environment Variables
-Copy `.env.example` to `.env` and adjust your environment variables:
+Copy `.env.example` to `.env` to create your local environment file:
 ```bash
 # Create local environment file
 cp .env.example .env

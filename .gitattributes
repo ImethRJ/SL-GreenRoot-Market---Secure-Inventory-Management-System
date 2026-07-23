@@ -1,0 +1,8 @@
+# Treat HTML, CSS, JS, and JSON files as vendored to prioritize Python in GitHub language statistics
+*.html linguist-vendored
+*.css linguist-vendored
+*.js linguist-vendored
+*.json linguist-vendored
+
+# Ensure Python files are explicitly detected
+*.py linguist-detectable=true
